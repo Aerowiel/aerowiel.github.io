@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  web:
+    build: ./docker
+    ports:
+      - 3000
+    volumes:
+      - ./:/project
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.docker.network: traefik
+      traefik.port: "3000"
+      traefik.frontend.rule: "Host:aerowiel.test"
+    command: run start
+
+  storybook:
+    build: ./docker
+    ports:
+      - 6006
+    volumes:
+      - ./:/project
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.docker.network: traefik
+      traefik.port: "6006"
+      traefik.frontend.rule: "Host:storybook.aerowiel.test"
+    command: run storybook
+
+  cypress:
+    image: "cypress/included:7.3.0"
+    working_dir: /e2e
+    volumes:
+      - ./:/e2e
+    depends_on:
+      - web
+    networks:
+      - default
+      - traefik
+
+  npm:
+    build: ./docker
+    command: --help
+    entrypoint: npm
+    tty: true
+    volumes:
+      - ./:/project
+      - $SSH_AUTH_SOCK:/ssh-agent
+      - $HOME/.ssh/known_hosts:/etc/ssh/ssh_known_hosts
+
+networks:
+  traefik:
+    external: true
